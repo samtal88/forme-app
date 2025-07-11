@@ -1,20 +1,8 @@
 {
-  "buildCommand": "npm run build",
-  "outputDirectory": "dist",
-  "framework": "vite",
   "rewrites": [
     {
       "source": "/(.*)",
       "destination": "/index.html"
     }
-  ],
-  "env": {
-    "VITE_SUPABASE_URL": "@supabase_url",
-    "VITE_SUPABASE_ANON_KEY": "@supabase_anon_key",
-    "VITE_TWITTER_API_KEY": "@twitter_api_key",
-    "VITE_TWITTER_API_SECRET": "@twitter_api_secret",
-    "VITE_TWITTER_ACCESS_TOKEN": "@twitter_access_token",
-    "VITE_TWITTER_ACCESS_TOKEN_SECRET": "@twitter_access_token_secret",
-    "VITE_TWITTER_BEARER_TOKEN": "@twitter_bearer_token"
-  }
+  ]
 }
