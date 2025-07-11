@@ -8,6 +8,7 @@ export const env = {
     apiSecret: import.meta.env.VITE_TWITTER_API_SECRET,
     accessToken: import.meta.env.VITE_TWITTER_ACCESS_TOKEN,
     accessTokenSecret: import.meta.env.VITE_TWITTER_ACCESS_TOKEN_SECRET,
+    bearerToken: import.meta.env.VITE_TWITTER_BEARER_TOKEN,
   },
 }
 

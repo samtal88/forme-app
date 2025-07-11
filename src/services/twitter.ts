@@ -43,7 +43,7 @@ class TwitterAPIService {
 
   constructor() {
     this.headers = {
-      'Authorization': `Bearer ${env.twitter.accessToken}`,
+      'Authorization': `Bearer ${env.twitter.bearerToken || env.twitter.accessToken}`,
       'Content-Type': 'application/json',
     }
   }
