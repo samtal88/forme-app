@@ -127,6 +127,9 @@ CREATE POLICY "Users can view own API usage" ON public.api_usage_tracking FOR AL
 -- Teams table is public for reading
 CREATE POLICY "Teams are publicly readable" ON public.teams FOR SELECT TO authenticated USING (true);
 
+-- Add unique constraint for teams
+ALTER TABLE public.teams ADD CONSTRAINT teams_name_league_unique UNIQUE (name, league);
+
 -- Insert default teams data
 INSERT INTO public.teams (name, league, official_handle, logo_url) VALUES
 -- Premier League
