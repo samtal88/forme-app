@@ -49,7 +49,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       setLoading(false)
 
       // Create user profile if this is a new signup
-      if (event === 'SIGNED_UP' && session?.user) {
+      if (event === 'SIGNED_IN' && session?.user) {
         await createUserProfile(session.user)
       }
     })

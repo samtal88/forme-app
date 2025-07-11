@@ -1,4 +1,5 @@
 export * from './database'
+import type { ContentItem, ContentSource, UserInteraction } from './database'
 
 export interface AuthUser {
   id: string
