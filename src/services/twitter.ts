@@ -49,6 +49,32 @@ class TwitterAPIService {
   }
 
   private async makeRequest(endpoint: string, params: Record<string, string> = {}) {
+    // Use our Vercel API proxy instead of direct Twitter API calls
+    if (endpoint.includes('/users/') && endpoint.includes('/tweets')) {
+      const username = params.username || endpoint.split('/users/')[1]?.split('/')[0]
+      if (username) {
+        const url = new URL('/api/twitter', window.location.origin)
+        url.searchParams.append('username', username)
+        if (params.max_results) {
+          url.searchParams.append('maxResults', params.max_results)
+        }
+
+        const response = await fetch(url.toString())
+        if (!response.ok) {
+          const error = await response.text()
+          throw new Error(`API Error: ${response.status} - ${error}`)
+        }
+
+        const data = await response.json()
+        if (!data.success) {
+          throw new Error(data.error || 'API request failed')
+        }
+
+        return { data: data.data, includes: data.includes }
+      }
+    }
+
+    // Fallback to direct API calls (will likely fail due to CORS)
     const url = new URL(`${this.baseURL}${endpoint}`)
     Object.entries(params).forEach(([key, value]) => {
       url.searchParams.append(key, value)
@@ -69,27 +95,23 @@ class TwitterAPIService {
 
   async getUserTweets(username: string, maxResults: number = 10): Promise<TwitterTweet[]> {
     try {
-      // First get user ID by username
-      const userResponse = await this.makeRequest(`/users/by/username/${username}`, {
-        'user.fields': 'id,username,name,profile_image_url'
-      })
+      // Use our Vercel API proxy
+      const url = new URL('/api/twitter', window.location.origin)
+      url.searchParams.append('username', username)
+      url.searchParams.append('maxResults', maxResults.toString())
 
-      if (!userResponse.data) {
-        throw new Error(`User ${username} not found`)
+      const response = await fetch(url.toString())
+      if (!response.ok) {
+        const error = await response.text()
+        throw new Error(`API Error: ${response.status} - ${error}`)
       }
 
-      const userId = userResponse.data.id
+      const data = await response.json()
+      if (!data.success) {
+        throw new Error(data.error || 'API request failed')
+      }
 
-      // Get user's tweets
-      const tweetsResponse: TwitterAPIResponse = await this.makeRequest(`/users/${userId}/tweets`, {
-        'max_results': maxResults.toString(),
-        'tweet.fields': 'created_at,public_metrics,attachments,context_annotations',
-        'expansions': 'author_id,attachments.media_keys',
-        'user.fields': 'username,name,profile_image_url',
-        'media.fields': 'type,url,preview_image_url'
-      })
-
-      return tweetsResponse.data || []
+      return data.data || []
     } catch (error) {
       console.error(`Error fetching tweets for ${username}:`, error)
       throw error

@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { twitterAPI } from '../services/twitter'
+import { env } from '../utils/env'
 
 export function TwitterTest() {
   const [loading, setLoading] = useState(false)
@@ -10,13 +10,35 @@ export function TwitterTest() {
     setResult('')
     
     try {
-      // Test with a simple Twitter handle
-      const tweets = await twitterAPI.getUserTweets('premierleague', 5)
-      setResult(`Success! Fetched ${tweets.length} tweets from @premierleague`)
-      console.log('Tweets:', tweets)
+      console.log('Testing Twitter API via Vercel proxy...')
+      
+      // Test our Vercel API proxy
+      const url = new URL('/api/twitter', window.location.origin)
+      url.searchParams.append('username', 'premierleague')
+      url.searchParams.append('maxResults', '5')
+      
+      const response = await fetch(url.toString())
+      
+      console.log('Response status:', response.status)
+      
+      if (!response.ok) {
+        const errorText = await response.text()
+        console.error('API Error Response:', errorText)
+        throw new Error(`HTTP ${response.status}: ${errorText}`)
+      }
+      
+      const data = await response.json()
+      console.log('API Response:', data)
+      
+      if (data.success) {
+        setResult(`Success! Fetched ${data.count} tweets from @premierleague via Vercel API`)
+      } else {
+        setResult(`Error: ${data.error}`)
+      }
+      
     } catch (error: any) {
+      console.error('Full Twitter API Error:', error)
       setResult(`Error: ${error.message}`)
-      console.error('Twitter API Error:', error)
     } finally {
       setLoading(false)
     }
