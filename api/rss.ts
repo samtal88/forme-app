@@ -155,8 +155,11 @@ function parseRSSXML(xmlText: string): RSSFeed {
     console.log('Found item matches:', itemMatches?.length || 0)
     
     if (itemMatches) {
-      for (const itemXml of itemMatches.slice(0, 20)) { // Limit to 20 items
+      console.log('First item preview:', itemMatches[0]?.substring(0, 300))
+      for (let i = 0; i < Math.min(itemMatches.length, 20); i++) {
+        const itemXml = itemMatches[i]
         const item = isAtom ? parseAtomEntry(itemXml) : parseRSSItem(itemXml)
+        console.log(`Item ${i + 1} parsed result:`, item ? { title: item.title, link: item.link } : 'null')
         if (item) {
           items.push(item)
         }
@@ -180,6 +183,8 @@ function parseRSSXML(xmlText: string): RSSFeed {
 
 function parseRSSItem(itemXml: string): RSSItem | null {
   try {
+    console.log('Parsing RSS item, XML length:', itemXml.length)
+    
     const titleMatch = itemXml.match(/<title[^>]*>(?:<!\[CDATA\[)?(.*?)(?:\]\]>)?<\/title>/is)
     const descMatch = itemXml.match(/<description[^>]*>(?:<!\[CDATA\[)?(.*?)(?:\]\]>)?<\/description>/is)
     const linkMatch = itemXml.match(/<link[^>]*>(?:<!\[CDATA\[)?(.*?)(?:\]\]>)?<\/link>/is)
@@ -194,7 +199,16 @@ function parseRSSItem(itemXml: string): RSSItem | null {
     const guid = guidMatch?.[1]?.trim() || link || `item-${Date.now()}-${Math.random()}`
     const author = cleanText(authorMatch?.[1] || authorMatch?.[2] || '')
     
+    console.log('RSS item extract results:', {
+      titleMatch: !!titleMatch,
+      descMatch: !!descMatch,
+      linkMatch: !!linkMatch,
+      title: title.substring(0, 50),
+      description: description.substring(0, 50)
+    })
+    
     if (!title && !description) {
+      console.log('Skipping RSS item - no title or description')
       return null // Skip items without content
     }
     
@@ -215,6 +229,8 @@ function parseRSSItem(itemXml: string): RSSItem | null {
 
 function parseAtomEntry(entryXml: string): RSSItem | null {
   try {
+    console.log('Parsing Atom entry, XML length:', entryXml.length)
+    
     const titleMatch = entryXml.match(/<title[^>]*>(.*?)<\/title>/is)
     const summaryMatch = entryXml.match(/<summary[^>]*>(.*?)<\/summary>/is)
     const contentMatch = entryXml.match(/<content[^>]*>(.*?)<\/content>/is)
@@ -231,7 +247,17 @@ function parseAtomEntry(entryXml: string): RSSItem | null {
     const guid = idMatch?.[1]?.trim() || link || `entry-${Date.now()}-${Math.random()}`
     const author = cleanText(authorMatch?.[1] || '')
     
+    console.log('Atom entry extract results:', {
+      titleMatch: !!titleMatch,
+      summaryMatch: !!summaryMatch,
+      contentMatch: !!contentMatch,
+      linkMatch: !!linkMatch,
+      title: title.substring(0, 50),
+      description: description.substring(0, 50)
+    })
+    
     if (!title && !description) {
+      console.log('Skipping Atom entry - no title or description')
       return null // Skip entries without content
     }
     
