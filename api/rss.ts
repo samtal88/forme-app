@@ -39,20 +39,38 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   try {
     console.log(`Fetching RSS feed: ${feedUrl}`)
     
-    // Fetch the RSS feed
+    // Fetch the RSS feed with timeout and better error handling
+    const controller = new AbortController()
+    const timeoutId = setTimeout(() => controller.abort(), 10000) // 10 second timeout
+    
     const response = await fetch(feedUrl, {
+      signal: controller.signal,
       headers: {
         'User-Agent': 'ForMe Football App/1.0',
-        'Accept': 'application/rss+xml, application/xml, text/xml'
+        'Accept': 'application/rss+xml, application/xml, text/xml, */*'
       }
     })
+    
+    clearTimeout(timeoutId)
 
     if (!response.ok) {
+      const errorText = await response.text().catch(() => 'No response body')
+      console.error(`RSS fetch failed: ${response.status} ${response.statusText}`, errorText)
       throw new Error(`HTTP ${response.status}: ${response.statusText}`)
     }
 
     const xmlText = await response.text()
     console.log(`RSS XML length: ${xmlText.length}`)
+    
+    if (!xmlText || xmlText.length === 0) {
+      throw new Error('Empty response from RSS feed')
+    }
+    
+    // Check if response looks like XML
+    if (!xmlText.trim().startsWith('<')) {
+      console.error('Response does not appear to be XML:', xmlText.substring(0, 200))
+      throw new Error('Response is not valid XML')
+    }
     
     // Parse RSS XML (basic parsing without external libraries)
     const feed = parseRSSXML(xmlText)
@@ -65,8 +83,19 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   } catch (error: any) {
     console.error('RSS Feed Error:', error)
+    
+    let errorMessage = error.message
+    if (error.name === 'AbortError') {
+      errorMessage = 'Request timeout - RSS feed took too long to respond'
+    } else if (error.code === 'ENOTFOUND') {
+      errorMessage = 'RSS feed URL not found - check the URL is correct'
+    } else if (error.code === 'ECONNREFUSED') {
+      errorMessage = 'Connection refused - RSS feed server is not accessible'
+    }
+    
     return res.status(500).json({ 
-      error: `Failed to fetch RSS feed: ${error.message}` 
+      error: `Failed to fetch RSS feed: ${errorMessage}`,
+      details: error.code || error.name || 'Unknown error'
     })
   }
 }

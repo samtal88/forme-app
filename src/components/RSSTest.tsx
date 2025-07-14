@@ -6,7 +6,7 @@ import type { RSSSource } from '../types'
 
 export function RSSTest() {
   const { user } = useAuth()
-  const [testFeedUrl, setTestFeedUrl] = useState('https://feeds.skysports.com/feeds/11095')
+  const [testFeedUrl, setTestFeedUrl] = useState('https://feeds.feedburner.com/oreilly/radar')
   const [loading, setLoading] = useState(false)
   const [result, setResult] = useState<string>('')
 
@@ -105,7 +105,7 @@ ${feed.items.slice(0, 3).map((item, i) =>
             type="url"
             value={testFeedUrl}
             onChange={(e) => setTestFeedUrl(e.target.value)}
-            placeholder="https://feeds.skysports.com/feeds/11095"
+            placeholder="https://feeds.feedburner.com/oreilly/radar"
             className="w-full px-3 py-2 border border-orange-300 rounded-md text-sm"
           />
         </div>
@@ -141,22 +141,28 @@ ${feed.items.slice(0, 3).map((item, i) =>
         <p className="text-sm text-orange-800 font-medium mb-2">Sample RSS Feeds to Test:</p>
         <div className="space-y-1 text-xs text-orange-700">
           <button 
-            onClick={() => setTestFeedUrl('https://feeds.skysports.com/feeds/11095')}
+            onClick={() => setTestFeedUrl('https://feeds.feedburner.com/oreilly/radar')}
             className="block hover:underline text-left"
           >
-            Sky Sports Football: https://feeds.skysports.com/feeds/11095
+            O'Reilly Radar: https://feeds.feedburner.com/oreilly/radar
           </button>
           <button 
-            onClick={() => setTestFeedUrl('https://www.espn.com/espn/rss/news')}
+            onClick={() => setTestFeedUrl('https://rss.cnn.com/rss/cnn_topstories.rss')}
             className="block hover:underline text-left"
           >
-            ESPN News: https://www.espn.com/espn/rss/news
+            CNN Top Stories: https://rss.cnn.com/rss/cnn_topstories.rss
           </button>
           <button 
-            onClick={() => setTestFeedUrl('https://www.bbc.co.uk/sport/football/rss.xml')}
+            onClick={() => setTestFeedUrl('https://feeds.npr.org/1001/rss.xml')}
             className="block hover:underline text-left"
           >
-            BBC Sport Football: https://www.bbc.co.uk/sport/football/rss.xml
+            NPR News: https://feeds.npr.org/1001/rss.xml
+          </button>
+          <button 
+            onClick={() => setTestFeedUrl('https://www.theguardian.com/football/rss')}
+            className="block hover:underline text-left"
+          >
+            Guardian Football: https://www.theguardian.com/football/rss
           </button>
         </div>
       </div>
