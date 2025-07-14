@@ -75,10 +75,21 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // Parse RSS XML (basic parsing without external libraries)
     const feed = parseRSSXML(xmlText)
     
+    console.log('Final response - Feed parsed successfully:', {
+      title: feed.title,
+      description: feed.description?.substring(0, 100),
+      itemCount: feed.items.length
+    })
+    
     return res.status(200).json({
       success: true,
       feed,
-      itemCount: feed.items.length
+      itemCount: feed.items.length,
+      debug: {
+        xmlLength: xmlText.length,
+        xmlPreview: xmlText.substring(0, 500),
+        feedType: xmlText.includes('<feed') ? 'Atom' : 'RSS'
+      }
     })
 
   } catch (error: any) {

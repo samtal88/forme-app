@@ -21,7 +21,14 @@ export function RSSTest() {
 
     try {
       // Test fetching the RSS feed
-      const feed = await rssService.fetchRSSFeed(testFeedUrl)
+      const response = await fetch(`/api/rss?feedUrl=${encodeURIComponent(testFeedUrl)}`)
+      const data = await response.json()
+      
+      if (!data.success) {
+        throw new Error(data.error || 'RSS fetch failed')
+      }
+      
+      const feed = data.feed
       
       setResult(`✅ RSS Feed Test Success!
 Feed Title: ${feed.title}
@@ -30,7 +37,12 @@ Items Count: ${feed.items.length}
 Sample Items:
 ${feed.items.slice(0, 3).map((item, i) => 
   `${i + 1}. ${item.title} (${item.pubDate})`
-).join('\n')}`)
+).join('\n')}
+
+🔍 Debug Info:
+- XML Length: ${data.debug?.xmlLength || 'N/A'}
+- Feed Type: ${data.debug?.feedType || 'N/A'}
+- XML Preview: ${data.debug?.xmlPreview || 'N/A'}`)
 
     } catch (error: any) {
       console.error('RSS test error:', error)
