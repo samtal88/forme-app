@@ -271,11 +271,30 @@ function Feed() {
             </div>
           )}
 
-          {/* API Usage Info */}
-          <div className="card p-4 bg-blue-50 border-blue-200">
-            <p className="text-blue-700 text-sm">
-              API calls remaining today: {curation.remainingCalls}
-            </p>
+          {/* Feed Content Actions */}
+          <div className="card p-4 bg-green-50 border-green-200">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-green-700 text-sm">
+                  API calls remaining today: {curation.remainingCalls}
+                </p>
+              </div>
+              <div className="space-x-2">
+                <button 
+                  onClick={() => navigate('/sources')}
+                  className="btn-secondary text-sm"
+                >
+                  Manage Sources
+                </button>
+                <button 
+                  onClick={handleRefresh}
+                  disabled={curation.loading}
+                  className="btn-primary text-sm disabled:opacity-50"
+                >
+                  {curation.loading ? 'Fetching...' : 'Fetch Real Content'}
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       </main>
