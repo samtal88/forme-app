@@ -101,31 +101,69 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 }
 
 function parseRSSXML(xmlText: string): RSSFeed {
-  // Basic XML parsing without external dependencies
-  // This is a simplified parser - in production, you might want xml2js or similar
+  // Enhanced XML parsing to handle RSS 2.0, RSS 1.0, and Atom feeds
   
   try {
-    // Extract channel info
-    const titleMatch = xmlText.match(/<title><!\[CDATA\[(.*?)\]\]><\/title>|<title>(.*?)<\/title>/i)
-    const descMatch = xmlText.match(/<description><!\[CDATA\[(.*?)\]\]><\/description>|<description>(.*?)<\/description>/i)
-    const linkMatch = xmlText.match(/<link>(.*?)<\/link>/i)
+    console.log('Parsing XML, length:', xmlText.length)
+    console.log('XML preview:', xmlText.substring(0, 500))
     
-    const channelTitle = titleMatch?.[1] || titleMatch?.[2] || 'Unknown Feed'
-    const channelDesc = descMatch?.[1] || descMatch?.[2] || 'RSS Feed'
-    const channelLink = linkMatch?.[1] || ''
+    // Detect feed type
+    const isAtom = xmlText.includes('<feed') || xmlText.includes('xmlns="http://www.w3.org/2005/Atom"')
+    const isRSS1 = xmlText.includes('xmlns="http://purl.org/rss/1.0/"')
+    
+    console.log('Feed type detection - Atom:', isAtom, 'RSS1:', isRSS1)
+    
+    let channelTitle = 'Unknown Feed'
+    let channelDesc = 'RSS Feed'
+    let channelLink = ''
+    
+    if (isAtom) {
+      // Parse Atom feed
+      const titleMatch = xmlText.match(/<title[^>]*>(.*?)<\/title>/is)
+      const subtitleMatch = xmlText.match(/<subtitle[^>]*>(.*?)<\/subtitle>/is)
+      const linkMatch = xmlText.match(/<link[^>]*href="([^"]*)"[^>]*>/i)
+      
+      channelTitle = cleanText(titleMatch?.[1] || 'Atom Feed')
+      channelDesc = cleanText(subtitleMatch?.[1] || 'Atom Feed')
+      channelLink = linkMatch?.[1] || ''
+    } else {
+      // Parse RSS feed - look for channel info more carefully
+      const channelMatch = xmlText.match(/<channel[^>]*>(.*?)<\/channel>/is)
+      const channelContent = channelMatch?.[1] || xmlText
+      
+      const titleMatch = channelContent.match(/<title[^>]*>(?:<!\[CDATA\[)?(.*?)(?:\]\]>)?<\/title>/is)
+      const descMatch = channelContent.match(/<description[^>]*>(?:<!\[CDATA\[)?(.*?)(?:\]\]>)?<\/description>/is)
+      const linkMatch = channelContent.match(/<link[^>]*>(.*?)<\/link>/is)
+      
+      channelTitle = cleanText(titleMatch?.[1] || 'RSS Feed')
+      channelDesc = cleanText(descMatch?.[1] || 'RSS Feed')
+      channelLink = cleanText(linkMatch?.[1] || '')
+    }
+    
+    console.log('Extracted channel info:', { channelTitle, channelDesc, channelLink })
     
     // Extract items
     const items: RSSItem[] = []
-    const itemMatches = xmlText.match(/<item[^>]*>.*?<\/item>/gis)
+    let itemMatches: RegExpMatchArray | null = null
+    
+    if (isAtom) {
+      itemMatches = xmlText.match(/<entry[^>]*>.*?<\/entry>/gis)
+    } else {
+      itemMatches = xmlText.match(/<item[^>]*>.*?<\/item>/gis)
+    }
+    
+    console.log('Found item matches:', itemMatches?.length || 0)
     
     if (itemMatches) {
       for (const itemXml of itemMatches.slice(0, 20)) { // Limit to 20 items
-        const item = parseRSSItem(itemXml)
+        const item = isAtom ? parseAtomEntry(itemXml) : parseRSSItem(itemXml)
         if (item) {
           items.push(item)
         }
       }
     }
+    
+    console.log('Parsed items count:', items.length)
     
     return {
       title: channelTitle,
@@ -142,35 +180,72 @@ function parseRSSXML(xmlText: string): RSSFeed {
 
 function parseRSSItem(itemXml: string): RSSItem | null {
   try {
-    const titleMatch = itemXml.match(/<title><!\[CDATA\[(.*?)\]\]><\/title>|<title>(.*?)<\/title>/is)
-    const descMatch = itemXml.match(/<description><!\[CDATA\[(.*?)\]\]><\/description>|<description>(.*?)<\/description>/is)
-    const linkMatch = itemXml.match(/<link><!\[CDATA\[(.*?)\]\]><\/link>|<link>(.*?)<\/link>/is)
-    const pubDateMatch = itemXml.match(/<pubDate>(.*?)<\/pubDate>/is)
+    const titleMatch = itemXml.match(/<title[^>]*>(?:<!\[CDATA\[)?(.*?)(?:\]\]>)?<\/title>/is)
+    const descMatch = itemXml.match(/<description[^>]*>(?:<!\[CDATA\[)?(.*?)(?:\]\]>)?<\/description>/is)
+    const linkMatch = itemXml.match(/<link[^>]*>(?:<!\[CDATA\[)?(.*?)(?:\]\]>)?<\/link>/is)
+    const pubDateMatch = itemXml.match(/<pubDate[^>]*>(.*?)<\/pubDate>/is)
     const guidMatch = itemXml.match(/<guid[^>]*>(.*?)<\/guid>/is)
-    const authorMatch = itemXml.match(/<author>(.*?)<\/author>|<dc:creator><!\[CDATA\[(.*?)\]\]><\/dc:creator>|<dc:creator>(.*?)<\/dc:creator>/is)
+    const authorMatch = itemXml.match(/<author[^>]*>(.*?)<\/author>|<dc:creator[^>]*>(?:<!\[CDATA\[)?(.*?)(?:\]\]>)?<\/dc:creator>/is)
     
-    const title = titleMatch?.[1] || titleMatch?.[2] || ''
-    const description = descMatch?.[1] || descMatch?.[2] || ''
-    const link = linkMatch?.[1] || linkMatch?.[2] || ''
-    const pubDate = pubDateMatch?.[1] || new Date().toISOString()
-    const guid = guidMatch?.[1] || link || `item-${Date.now()}-${Math.random()}`
-    const author = authorMatch?.[1] || authorMatch?.[2] || authorMatch?.[3] || ''
+    const title = cleanText(titleMatch?.[1] || '')
+    const description = cleanText(descMatch?.[1] || '')
+    const link = cleanText(linkMatch?.[1] || '')
+    const pubDate = pubDateMatch?.[1]?.trim() || new Date().toISOString()
+    const guid = guidMatch?.[1]?.trim() || link || `item-${Date.now()}-${Math.random()}`
+    const author = cleanText(authorMatch?.[1] || authorMatch?.[2] || '')
     
     if (!title && !description) {
       return null // Skip items without content
     }
     
     return {
-      title: cleanText(title),
-      description: cleanText(description),
-      link: link.trim(),
-      pubDate: pubDate.trim(),
-      guid: guid.trim(),
-      author: cleanText(author)
+      title,
+      description,
+      link,
+      pubDate,
+      guid,
+      author
     }
     
   } catch (error) {
     console.error('Error parsing RSS item:', error)
+    return null
+  }
+}
+
+function parseAtomEntry(entryXml: string): RSSItem | null {
+  try {
+    const titleMatch = entryXml.match(/<title[^>]*>(.*?)<\/title>/is)
+    const summaryMatch = entryXml.match(/<summary[^>]*>(.*?)<\/summary>/is)
+    const contentMatch = entryXml.match(/<content[^>]*>(.*?)<\/content>/is)
+    const linkMatch = entryXml.match(/<link[^>]*href="([^"]*)"[^>]*>/i)
+    const publishedMatch = entryXml.match(/<published[^>]*>(.*?)<\/published>/is)
+    const updatedMatch = entryXml.match(/<updated[^>]*>(.*?)<\/updated>/is)
+    const idMatch = entryXml.match(/<id[^>]*>(.*?)<\/id>/is)
+    const authorMatch = entryXml.match(/<author[^>]*>.*?<name[^>]*>(.*?)<\/name>.*?<\/author>/is)
+    
+    const title = cleanText(titleMatch?.[1] || '')
+    const description = cleanText(summaryMatch?.[1] || contentMatch?.[1] || '')
+    const link = linkMatch?.[1] || ''
+    const pubDate = (publishedMatch?.[1] || updatedMatch?.[1] || new Date().toISOString()).trim()
+    const guid = idMatch?.[1]?.trim() || link || `entry-${Date.now()}-${Math.random()}`
+    const author = cleanText(authorMatch?.[1] || '')
+    
+    if (!title && !description) {
+      return null // Skip entries without content
+    }
+    
+    return {
+      title,
+      description,
+      link,
+      pubDate,
+      guid,
+      author
+    }
+    
+  } catch (error) {
+    console.error('Error parsing Atom entry:', error)
     return null
   }
 }
