@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { Settings, RefreshCw, Menu } from 'lucide-react'
 import { TwitterTest } from '../components/TwitterTest'
 import { MockDataTest } from '../components/MockDataTest'
+import { RSSTest } from '../components/RSSTest'
 import { useContentCuration } from '../hooks/useContentCuration'
 import { getUserContent, getUserSources } from '../services/database'
 import type { ContentItem, ContentSource, UserInteraction } from '../types'
@@ -136,6 +137,9 @@ function Feed() {
         <div className="space-y-4">
           {/* Twitter API Test Component */}
           <TwitterTest />
+
+          {/* RSS Feed Test Component */}
+          <RSSTest />
 
           {/* Mock Data Test Component */}
           <MockDataTest onContentAdded={loadFeedContent} />
