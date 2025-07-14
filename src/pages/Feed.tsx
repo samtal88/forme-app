@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useEffect, useState } from 'react'
 import { Settings, RefreshCw, Menu } from 'lucide-react'
 import { TwitterTest } from '../components/TwitterTest'
+import { MockDataTest } from '../components/MockDataTest'
 import { useContentCuration } from '../hooks/useContentCuration'
 import { getUserContent, getUserSources } from '../services/database'
 import type { ContentItem, ContentSource, UserInteraction } from '../types'
@@ -129,6 +130,9 @@ function Feed() {
         <div className="space-y-4">
           {/* Twitter API Test Component */}
           <TwitterTest />
+
+          {/* Mock Data Test Component */}
+          <MockDataTest />
 
           {/* Debug: Show Sources */}
           <div className="card p-4 bg-gray-50">
