@@ -156,7 +156,10 @@ export const getUserContent = async (userId: string, limit: number = 20, offset:
 export const createContentItem = async (item: Omit<ContentItem, 'id' | 'cached_at'>) => {
   const { data, error } = await supabase
     .from('content_items')
-    .insert(item)
+    .upsert(item, {
+      onConflict: 'source_id,platform_id',
+      ignoreDuplicates: false
+    })
     .select()
     .single()
 

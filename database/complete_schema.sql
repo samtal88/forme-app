@@ -72,6 +72,7 @@ CREATE TABLE public.content_sources (
   platform TEXT NOT NULL DEFAULT 'twitter',
   handle TEXT NOT NULL,
   display_name TEXT,
+  feed_url TEXT,
   priority INTEGER DEFAULT 1,
   is_active BOOLEAN DEFAULT true,
   last_updated TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
@@ -84,6 +85,7 @@ CREATE TABLE public.content_items (
   source_id UUID REFERENCES public.content_sources(id) ON DELETE CASCADE,
   platform_id TEXT NOT NULL,
   content_text TEXT,
+  content_summary TEXT,
   author_handle TEXT NOT NULL,
   posted_at TIMESTAMP WITH TIME ZONE NOT NULL,
   cached_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
@@ -91,7 +93,9 @@ CREATE TABLE public.content_items (
   is_breaking_news BOOLEAN DEFAULT false,
   content_type TEXT DEFAULT 'general',
   media_urls TEXT[],
-  external_url TEXT
+  external_url TEXT,
+  source_url TEXT,
+  UNIQUE(source_id, platform_id)
 );
 
 -- User interactions table

@@ -1,7 +1,6 @@
 import { useState, useCallback } from 'react'
 import { useAuth } from '../contexts/AuthContext'
-import { TwitterCurationService, TwitterRateLimitService } from '../services/twitter'
-import { getUserSources, createContentItem } from '../services/database'
+import { unifiedCuration } from '../services/contentCuration'
 
 interface CurationState {
   loading: boolean
@@ -21,14 +20,13 @@ export const useContentCuration = () => {
   })
   
   const { user } = useAuth()
-  const curationService = new TwitterCurationService()
 
   const updateRemainingCalls = useCallback(async () => {
     if (!user) return
     
     try {
-      const remaining = await TwitterRateLimitService.getRemainingCalls(user.id)
-      setState(prev => ({ ...prev, remainingCalls: remaining }))
+      const remaining = await unifiedCuration.getRemainingAPICalls(user.id)
+      setState(prev => ({ ...prev, remainingCalls: remaining.twitter }))
     } catch (error) {
       console.error('Error updating remaining calls:', error)
     }
@@ -43,57 +41,13 @@ export const useContentCuration = () => {
     setState(prev => ({ ...prev, loading: true, error: null, progressStatus: 'Initializing...' }))
 
     try {
-      // Get user's content sources
-      const sources = await getUserSources(user.id)
-      const activeSources = sources.filter(s => s.is_active)
-
-      if (activeSources.length === 0) {
-        setState(prev => ({ 
-          ...prev, 
-          loading: false, 
-          progressStatus: null,
-          error: 'No active content sources found. Please add some sources first.' 
-        }))
-        return
-      }
-
-      // Check rate limits
-      const { canCall, reason } = await TwitterRateLimitService.canMakeAPICall(user.id)
-      if (!canCall) {
-        setState(prev => ({ 
-          ...prev, 
-          loading: false, 
-          progressStatus: null,
-          error: reason || 'Rate limit exceeded' 
-        }))
-        return
-      }
-
       // Progress callback
       const onProgress = (status: string) => {
         setState(prev => ({ ...prev, progressStatus: status }))
       }
 
-      // Curate content from sources with progress updates
-      const contentItems = await curationService.curateContentForUser(
-        user.id,
-        activeSources.map(s => ({ id: s.id, handle: s.handle, priority: s.priority })),
-        onProgress
-      )
-
-      setState(prev => ({ ...prev, progressStatus: 'Saving content to database...' }))
-
-      // Save content to database
-      let savedCount = 0
-      for (const item of contentItems) {
-        try {
-          await createContentItem(item)
-          savedCount++
-        } catch (error) {
-          // Log but don't fail the entire operation for duplicate content
-          console.warn('Failed to save content item:', error)
-        }
-      }
+      // Use unified curation service (handles both Twitter and RSS)
+      const savedCount = await unifiedCuration.curateAllContent(user.id, { onProgress })
 
       // Update state
       setState(prev => ({ 
@@ -117,21 +71,13 @@ export const useContentCuration = () => {
       }))
       throw error
     }
-  }, [user, curationService, updateRemainingCalls])
+  }, [user, updateRemainingCalls])
 
   const canCurateContent = useCallback(async (): Promise<{ canCurate: boolean; reason?: string }> => {
     if (!user) return { canCurate: false, reason: 'User not authenticated' }
     
     try {
-      const sources = await getUserSources(user.id)
-      const activeSources = sources.filter(s => s.is_active)
-      
-      if (activeSources.length === 0) {
-        return { canCurate: false, reason: 'No active content sources' }
-      }
-
-      const result = await TwitterRateLimitService.canMakeAPICall(user.id)
-      return { canCurate: result.canCall, reason: result.reason }
+      return await unifiedCuration.canCurateContent(user.id)
     } catch (error) {
       return { canCurate: false, reason: 'Error checking curation status' }
     }

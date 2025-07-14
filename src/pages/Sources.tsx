@@ -11,6 +11,8 @@ function Sources() {
   const [sources, setSources] = useState<ContentSource[]>([])
   const [newHandle, setNewHandle] = useState('')
   const [newDisplayName, setNewDisplayName] = useState('')
+  const [newFeedUrl, setNewFeedUrl] = useState('')
+  const [selectedPlatform, setSelectedPlatform] = useState<'twitter' | 'rss'>('twitter')
   const [loading, setLoading] = useState(true)
   const [stats, setStats] = useState<any>(null)
   
@@ -54,23 +56,49 @@ function Sources() {
 
   const handleAddSource = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!user || !newHandle.trim()) return
+    if (!user) return
+
+    // Validation based on platform
+    if (selectedPlatform === 'twitter' && !newHandle.trim()) {
+      alert('Twitter handle is required')
+      return
+    }
+    if (selectedPlatform === 'rss' && (!newFeedUrl.trim() || !newDisplayName.trim())) {
+      alert('RSS feed URL and source name are required')
+      return
+    }
 
     try {
-      const newSource = await createContentSource({
+      const sourceData = {
         user_id: user.id,
-        platform: 'twitter',
-        handle: newHandle.trim().replace('@', ''),
-        display_name: newDisplayName.trim() || newHandle.trim(),
+        platform: selectedPlatform,
+        handle: '',
         priority: sources.length + 1,
         is_active: true,
-      })
+      }
+
+      if (selectedPlatform === 'twitter') {
+        Object.assign(sourceData, {
+          handle: newHandle.trim().replace('@', ''),
+          display_name: newDisplayName.trim() || newHandle.trim(),
+        })
+      } else {
+        Object.assign(sourceData, {
+          handle: newHandle.trim() || newDisplayName.trim().toLowerCase().replace(/\s+/g, ''),
+          display_name: newDisplayName.trim(),
+          feed_url: newFeedUrl.trim(),
+        })
+      }
+
+      const newSource = await createContentSource(sourceData)
       
       setSources([...sources, newSource])
       setNewHandle('')
       setNewDisplayName('')
+      setNewFeedUrl('')
     } catch (error) {
       console.error('Error adding source:', error)
+      alert('Failed to add source. Please try again.')
     }
   }
 
@@ -155,7 +183,7 @@ function Sources() {
               </button>
               <div>
                 <h1 className="text-xl font-bold">Content Sources</h1>
-                <p className="text-sm text-gray-500">Manage your Twitter sources</p>
+                <p className="text-sm text-gray-500">Manage your Twitter and RSS sources</p>
               </div>
             </div>
           </div>
@@ -208,39 +236,117 @@ function Sources() {
         <div className="card p-4">
           <h2 className="font-semibold mb-4 flex items-center">
             <Plus className="w-4 h-4 mr-2" />
-            Add Twitter Source
+            Add Content Source
           </h2>
           
+          {/* Platform Selection */}
+          <div className="mb-4">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Platform
+            </label>
+            <div className="flex space-x-2">
+              <button
+                type="button"
+                onClick={() => setSelectedPlatform('twitter')}
+                className={`px-4 py-2 rounded-lg text-sm font-medium ${
+                  selectedPlatform === 'twitter'
+                    ? 'bg-blue-100 text-blue-800 border-2 border-blue-300'
+                    : 'bg-gray-100 text-gray-600 border-2 border-transparent hover:bg-gray-200'
+                }`}
+              >
+                Twitter
+              </button>
+              <button
+                type="button"
+                onClick={() => setSelectedPlatform('rss')}
+                className={`px-4 py-2 rounded-lg text-sm font-medium ${
+                  selectedPlatform === 'rss'
+                    ? 'bg-orange-100 text-orange-800 border-2 border-orange-300'
+                    : 'bg-gray-100 text-gray-600 border-2 border-transparent hover:bg-gray-200'
+                }`}
+              >
+                RSS Feed
+              </button>
+            </div>
+          </div>
+          
           <form onSubmit={handleAddSource} className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Twitter Handle
-              </label>
-              <input
-                type="text"
-                value={newHandle}
-                onChange={(e) => setNewHandle(e.target.value)}
-                placeholder="SkySportsNews"
-                className="input-field"
-                required
-              />
-            </div>
-            
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Display Name (Optional)
-              </label>
-              <input
-                type="text"
-                value={newDisplayName}
-                onChange={(e) => setNewDisplayName(e.target.value)}
-                placeholder="Sky Sports News"
-                className="input-field"
-              />
-            </div>
+            {selectedPlatform === 'twitter' ? (
+              <>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Twitter Handle
+                  </label>
+                  <input
+                    type="text"
+                    value={newHandle}
+                    onChange={(e) => setNewHandle(e.target.value)}
+                    placeholder="SkySportsNews"
+                    className="input-field"
+                    required
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Display Name (Optional)
+                  </label>
+                  <input
+                    type="text"
+                    value={newDisplayName}
+                    onChange={(e) => setNewDisplayName(e.target.value)}
+                    placeholder="Sky Sports News"
+                    className="input-field"
+                  />
+                </div>
+              </>
+            ) : (
+              <>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    RSS Feed URL
+                  </label>
+                  <input
+                    type="url"
+                    value={newFeedUrl}
+                    onChange={(e) => setNewFeedUrl(e.target.value)}
+                    placeholder="https://feeds.skysports.com/feeds/11095"
+                    className="input-field"
+                    required
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Source Name
+                  </label>
+                  <input
+                    type="text"
+                    value={newDisplayName}
+                    onChange={(e) => setNewDisplayName(e.target.value)}
+                    placeholder="Sky Sports Football"
+                    className="input-field"
+                    required
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Handle/Identifier (Optional)
+                  </label>
+                  <input
+                    type="text"
+                    value={newHandle}
+                    onChange={(e) => setNewHandle(e.target.value)}
+                    placeholder="skysports"
+                    className="input-field"
+                  />
+                </div>
+              </>
+            )}
             
             <button type="submit" className="btn-primary w-full">
-              Add Source
+              Add {selectedPlatform === 'twitter' ? 'Twitter' : 'RSS'} Source
             </button>
           </form>
         </div>
@@ -252,7 +358,7 @@ function Sources() {
           {sources.length === 0 ? (
             <div className="text-center py-8 text-gray-500">
               <p>No sources added yet.</p>
-              <p className="text-sm">Add Twitter accounts to start curating content!</p>
+              <p className="text-sm">Add Twitter accounts or RSS feeds to start curating content!</p>
             </div>
           ) : (
             <div className="space-y-3">
@@ -263,11 +369,24 @@ function Sources() {
                   <GripVertical className="w-4 h-4 text-gray-400" />
                   
                   <div className="flex-1">
-                    <div className="flex items-center space-x-2">
+                    <div className="flex items-center space-x-2 mb-1">
                       <span className="font-medium">{source.display_name || source.handle}</span>
-                      <span className="text-sm text-gray-500">@{source.handle}</span>
+                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                        source.platform === 'twitter' 
+                          ? 'bg-blue-100 text-blue-800' 
+                          : 'bg-orange-100 text-orange-800'
+                      }`}>
+                        {source.platform.toUpperCase()}
+                      </span>
                     </div>
-                    <div className="flex items-center space-x-2 mt-1">
+                    <div className="flex items-center space-x-2 text-sm text-gray-500 mb-2">
+                      {source.platform === 'twitter' ? (
+                        <span>@{source.handle}</span>
+                      ) : (
+                        <span className="truncate max-w-xs">{source.feed_url}</span>
+                      )}
+                    </div>
+                    <div className="flex items-center space-x-2">
                       <span className={`px-2 py-1 rounded-full text-xs ${getPriorityColor(source.priority)}`}>
                         {getPriorityLabel(source.priority)}
                       </span>
@@ -320,9 +439,10 @@ function Sources() {
         <div className="card p-4 bg-blue-50 border-blue-200">
           <h3 className="font-semibold text-blue-900 mb-2">How Priorities Work</h3>
           <div className="text-sm text-blue-800 space-y-1">
-            <p><strong>Priority 1:</strong> Most important sources (morning updates, 50% of API calls)</p>
-            <p><strong>Priority 2:</strong> Regular sources (afternoon updates, 35% of API calls)</p>
-            <p><strong>Priority 3:</strong> Supplementary sources (evening updates, 15% of API calls)</p>
+            <p><strong>Priority 1:</strong> Most important sources (morning updates, 50% of Twitter API calls)</p>
+            <p><strong>Priority 2:</strong> Regular sources (afternoon updates, 35% of Twitter API calls)</p>
+            <p><strong>Priority 3:</strong> Supplementary sources (evening updates, 15% of Twitter API calls)</p>
+            <p className="mt-2 text-xs"><em>Note: RSS feeds have no rate limits and are updated regularly regardless of priority.</em></p>
           </div>
         </div>
       </main>

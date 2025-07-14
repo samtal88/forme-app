@@ -76,21 +76,35 @@ export class UnifiedContentCurationService {
         }
       }
       
-      // Save all content to database
+      // Save all content to database with deduplication
       onProgress?.(`Saving ${allContentItems.length} items to database...`)
       
       let savedCount = 0
+      let updatedCount = 0
       for (const item of allContentItems) {
         try {
-          await createContentItem(item)
-          savedCount++
+          const result = await createContentItem(item)
+          if (result) {
+            // Check if this was an insert (new) or update (existing)
+            // We can determine this by checking if cached_at is recent
+            const isNew = new Date(result.cached_at).getTime() > (Date.now() - 5000) // Within last 5 seconds
+            if (isNew) {
+              savedCount++
+            } else {
+              updatedCount++
+            }
+          }
         } catch (error) {
-          // Log but don't fail for duplicates
-          console.warn('Failed to save content item (likely duplicate):', error)
+          console.warn('Failed to save content item:', error)
         }
       }
       
-      onProgress?.(`✅ Content curation completed! Saved ${savedCount} new items`)
+      if (updatedCount > 0) {
+        onProgress?.(`✅ Content curation completed! Saved ${savedCount} new items, updated ${updatedCount} existing items`)
+      } else {
+        onProgress?.(`✅ Content curation completed! Saved ${savedCount} new items`)
+      }
+      
       return savedCount
       
     } catch (error: any) {
