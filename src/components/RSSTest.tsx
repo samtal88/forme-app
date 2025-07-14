@@ -1,8 +1,8 @@
 import { useState } from 'react'
-import { rssService, rssCuration } from '../services/rss'
+import { rssCuration } from '../services/rss'
 import { useAuth } from '../contexts/AuthContext'
 import { getUserSources, createContentItem } from '../services/database'
-import type { RSSSource } from '../types'
+import type { RSSSource, RSSItem } from '../types'
 
 export function RSSTest() {
   const { user } = useAuth()
@@ -35,7 +35,7 @@ Feed Title: ${feed.title}
 Feed Description: ${feed.description}
 Items Count: ${feed.items.length}
 Sample Items:
-${feed.items.slice(0, 3).map((item, i) => 
+${feed.items.slice(0, 3).map((item: RSSItem, i: number) => 
   `${i + 1}. ${item.title} (${item.pubDate})`
 ).join('\n')}
 
