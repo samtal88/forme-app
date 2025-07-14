@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import { Settings, RefreshCw, Menu } from 'lucide-react'
 import { TwitterTest } from '../components/TwitterTest'
 import { useContentCuration } from '../hooks/useContentCuration'
-import { getUserContent } from '../services/database'
+import { getUserContent, getUserSources } from '../services/database'
 import type { ContentItem, ContentSource, UserInteraction } from '../types'
 
 type FeedItem = ContentItem & { 
@@ -17,6 +17,7 @@ function Feed() {
   const navigate = useNavigate()
   const [feedItems, setFeedItems] = useState<FeedItem[]>([])
   const [loading, setLoading] = useState(false)
+  const [sources, setSources] = useState<ContentSource[]>([])
   const curation = useContentCuration()
 
   useEffect(() => {
@@ -25,7 +26,20 @@ function Feed() {
       return
     }
     loadFeedContent()
+    loadSources()
   }, [user, navigate])
+
+  const loadSources = async () => {
+    if (!user) return
+    
+    try {
+      const userSources = await getUserSources(user.id)
+      setSources(userSources)
+      console.log('User sources loaded:', userSources)
+    } catch (error) {
+      console.error('Error loading sources:', error)
+    }
+  }
 
   const loadFeedContent = async () => {
     if (!user) return
@@ -45,10 +59,16 @@ function Feed() {
     if (!user) return
     
     try {
-      await curation.curateContent()
+      console.log('Starting content curation...')
+      const itemsCreated = await curation.curateContent()
+      console.log(`Curation completed. Items created: ${itemsCreated}`)
+      
+      console.log('Reloading feed content...')
       await loadFeedContent()
+      console.log('Feed content reloaded')
     } catch (error) {
       console.error('Error refreshing content:', error)
+      alert(`Error: ${error instanceof Error ? error.message : 'Unknown error'}`)
     }
   }
 
@@ -109,6 +129,22 @@ function Feed() {
         <div className="space-y-4">
           {/* Twitter API Test Component */}
           <TwitterTest />
+
+          {/* Debug: Show Sources */}
+          <div className="card p-4 bg-gray-50">
+            <h3 className="font-semibold mb-2">Debug: Your Sources ({sources.length})</h3>
+            {sources.length > 0 ? (
+              <div className="space-y-1">
+                {sources.map(source => (
+                  <div key={source.id} className="text-sm">
+                    @{source.handle} - Priority {source.priority} - {source.is_active ? '✅ Active' : '❌ Inactive'}
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-gray-600 text-sm">No sources found. Add some in Sources page.</p>
+            )}
+          </div>
 
           {/* Curation Status */}
           {curation.error && (
