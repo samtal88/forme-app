@@ -171,7 +171,7 @@ class TwitterAPIService {
 
 // Rate limiting service
 export class TwitterRateLimitService {
-  private static readonly DAILY_LIMIT = 3 // Free tier: ~100 calls/month ÷ 30 days
+  private static readonly DAILY_LIMIT = 10 // Temporarily increased for testing
 
   static async canMakeAPICall(userId: string): Promise<{ canCall: boolean; reason?: string }> {
     try {
