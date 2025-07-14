@@ -1,5 +1,4 @@
 import { useState } from 'react'
-import { env } from '../utils/env'
 
 export function TwitterTest() {
   const [loading, setLoading] = useState(false)
