@@ -2,7 +2,11 @@ import { useState } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import { createContentItem, getUserSources } from '../services/database'
 
-export function MockDataTest() {
+interface MockDataTestProps {
+  onContentAdded?: () => void
+}
+
+export function MockDataTest({ onContentAdded }: MockDataTestProps) {
   const [loading, setLoading] = useState(false)
   const [result, setResult] = useState<string>('')
   const { user } = useAuth()
@@ -91,6 +95,11 @@ export function MockDataTest() {
       }
 
       setResult(`Success! Added ${created} mock tweets to your feed`)
+      
+      // Trigger feed reload
+      if (created > 0 && onContentAdded) {
+        onContentAdded()
+      }
       
     } catch (error: any) {
       console.error('Mock data error:', error)

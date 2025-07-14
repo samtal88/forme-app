@@ -138,7 +138,7 @@ function Feed() {
           <TwitterTest />
 
           {/* Mock Data Test Component */}
-          <MockDataTest />
+          <MockDataTest onContentAdded={loadFeedContent} />
 
           {/* Debug: Database Content Check */}
           <div className="card p-4 bg-yellow-50 border-yellow-200">
