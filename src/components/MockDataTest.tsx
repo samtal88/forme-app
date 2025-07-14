@@ -27,7 +27,7 @@ export function MockDataTest() {
           posted_at: new Date(Date.now() - 1000 * 60 * 30).toISOString(), // 30 mins ago
           engagement_count: 1247,
           is_breaking_news: true,
-          content_type: 'breaking',
+          content_type: 'breaking' as const,
           media_urls: [],
           external_url: 'https://twitter.com/skysportsnews/status/mock-tweet-1'
         },
@@ -39,7 +39,7 @@ export function MockDataTest() {
           posted_at: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString(), // 2 hours ago
           engagement_count: 892,
           is_breaking_news: false,
-          content_type: 'team',
+          content_type: 'team' as const,
           media_urls: [],
           external_url: 'https://twitter.com/lfc/status/mock-tweet-2'
         },
@@ -51,7 +51,7 @@ export function MockDataTest() {
           posted_at: new Date(Date.now() - 1000 * 60 * 60 * 4).toISOString(), // 4 hours ago
           engagement_count: 2156,
           is_breaking_news: true,
-          content_type: 'transfer',
+          content_type: 'transfer' as const,
           media_urls: [],
           external_url: 'https://twitter.com/fabrizioromano/status/mock-tweet-3'
         },
@@ -63,7 +63,7 @@ export function MockDataTest() {
           posted_at: new Date(Date.now() - 1000 * 60 * 60 * 6).toISOString(), // 6 hours ago
           engagement_count: 567,
           is_breaking_news: false,
-          content_type: 'general',
+          content_type: 'general' as const,
           media_urls: [],
           external_url: 'https://twitter.com/lufc/status/mock-tweet-4'
         }
