@@ -157,6 +157,16 @@ function Feed() {
             </div>
           )}
 
+          {/* Progress Status */}
+          {curation.progressStatus && (
+            <div className="card p-4 bg-blue-50 border-blue-200">
+              <div className="flex items-center space-x-2">
+                <RefreshCw className="w-4 h-4 animate-spin text-blue-600" />
+                <p className="text-blue-700">{curation.progressStatus}</p>
+              </div>
+            </div>
+          )}
+
           {/* Feed Items */}
           {loading ? (
             <div className="card p-6 text-center">

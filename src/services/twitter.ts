@@ -223,7 +223,11 @@ export class TwitterCurationService {
     this.twitterAPI = new TwitterAPIService()
   }
 
-  async curateContentForUser(userId: string, sources: Array<{ id: string; handle: string; priority: number }>) {
+  async curateContentForUser(
+    userId: string, 
+    sources: Array<{ id: string; handle: string; priority: number }>,
+    onProgress?: (status: string) => void
+  ) {
     const { canCall, reason } = await TwitterRateLimitService.canMakeAPICall(userId)
     
     if (!canCall) {
@@ -238,29 +242,73 @@ export class TwitterCurationService {
     const sourcesToFetch = this.distributeCalls(prioritySources, remainingCalls)
     
     const contentItems: Array<Omit<ContentItem, 'id' | 'cached_at'>> = []
+    const DELAY_BETWEEN_CALLS = 3000 // 3 seconds between API calls
+    const MAX_RETRIES = 2
 
-    for (const { source, callsToUse } of sourcesToFetch) {
+    onProgress?.(`Starting to fetch from ${sourcesToFetch.length} sources...`)
+
+    for (let i = 0; i < sourcesToFetch.length; i++) {
+      const { source, callsToUse } = sourcesToFetch[i]
+      
       try {
+        onProgress?.(`Fetching ${callsToUse} tweets from @${source.handle} (${i + 1}/${sourcesToFetch.length})...`)
         console.log(`Fetching ${callsToUse} tweets from @${source.handle}`)
         
-        const tweets = await this.twitterAPI.getUserTweets(source.handle, callsToUse)
-        await TwitterRateLimitService.recordAPICall(userId)
-
-        for (const tweet of tweets) {
-          const contentItem = this.twitterAPI.transformTweetToContentItem(
-            tweet, 
-            source.id, 
-            source.handle
-          )
-          contentItems.push(contentItem)
+        // Retry logic for rate limit errors
+        let tweets = null
+        let retryCount = 0
+        
+        while (retryCount <= MAX_RETRIES) {
+          try {
+            tweets = await this.twitterAPI.getUserTweets(source.handle, callsToUse)
+            break // Success, exit retry loop
+          } catch (error: any) {
+            if (error.message.includes('429') && retryCount < MAX_RETRIES) {
+              retryCount++
+              const retryDelay = DELAY_BETWEEN_CALLS * retryCount * 2 // Exponential backoff
+              onProgress?.(`Rate limited on @${source.handle}, retrying in ${retryDelay/1000}s (attempt ${retryCount}/${MAX_RETRIES})...`)
+              console.log(`Rate limited, waiting ${retryDelay}ms before retry ${retryCount}`)
+              await this.delay(retryDelay)
+            } else {
+              throw error // Re-throw if not rate limit or max retries reached
+            }
+          }
         }
-      } catch (error) {
+
+        if (tweets) {
+          await TwitterRateLimitService.recordAPICall(userId)
+
+          for (const tweet of tweets) {
+            const contentItem = this.twitterAPI.transformTweetToContentItem(
+              tweet, 
+              source.id, 
+              source.handle
+            )
+            contentItems.push(contentItem)
+          }
+          
+          onProgress?.(`✅ Successfully fetched ${tweets.length} tweets from @${source.handle}`)
+        }
+
+        // Add delay between sources (except for the last one)
+        if (i < sourcesToFetch.length - 1) {
+          onProgress?.(`Waiting ${DELAY_BETWEEN_CALLS/1000}s before next source...`)
+          await this.delay(DELAY_BETWEEN_CALLS)
+        }
+
+      } catch (error: any) {
         console.error(`Failed to fetch content from @${source.handle}:`, error)
+        onProgress?.(`❌ Failed to fetch from @${source.handle}: ${error.message}`)
         // Continue with other sources even if one fails
       }
     }
 
+    onProgress?.(`🎉 Completed! Fetched ${contentItems.length} total items`)
     return contentItems
+  }
+
+  private delay(ms: number): Promise<void> {
+    return new Promise(resolve => setTimeout(resolve, ms))
   }
 
   private distributeCalls(

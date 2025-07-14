@@ -8,6 +8,7 @@ interface CurationState {
   error: string | null
   lastUpdated: Date | null
   remainingCalls: number
+  progressStatus: string | null
 }
 
 export const useContentCuration = () => {
@@ -15,7 +16,8 @@ export const useContentCuration = () => {
     loading: false,
     error: null,
     lastUpdated: null,
-    remainingCalls: 0
+    remainingCalls: 0,
+    progressStatus: null
   })
   
   const { user } = useAuth()
@@ -38,7 +40,7 @@ export const useContentCuration = () => {
       return
     }
 
-    setState(prev => ({ ...prev, loading: true, error: null }))
+    setState(prev => ({ ...prev, loading: true, error: null, progressStatus: 'Initializing...' }))
 
     try {
       // Get user's content sources
@@ -49,6 +51,7 @@ export const useContentCuration = () => {
         setState(prev => ({ 
           ...prev, 
           loading: false, 
+          progressStatus: null,
           error: 'No active content sources found. Please add some sources first.' 
         }))
         return
@@ -60,21 +63,32 @@ export const useContentCuration = () => {
         setState(prev => ({ 
           ...prev, 
           loading: false, 
+          progressStatus: null,
           error: reason || 'Rate limit exceeded' 
         }))
         return
       }
 
-      // Curate content from sources
+      // Progress callback
+      const onProgress = (status: string) => {
+        setState(prev => ({ ...prev, progressStatus: status }))
+      }
+
+      // Curate content from sources with progress updates
       const contentItems = await curationService.curateContentForUser(
         user.id,
-        activeSources.map(s => ({ id: s.id, handle: s.handle, priority: s.priority }))
+        activeSources.map(s => ({ id: s.id, handle: s.handle, priority: s.priority })),
+        onProgress
       )
 
+      setState(prev => ({ ...prev, progressStatus: 'Saving content to database...' }))
+
       // Save content to database
+      let savedCount = 0
       for (const item of contentItems) {
         try {
           await createContentItem(item)
+          savedCount++
         } catch (error) {
           // Log but don't fail the entire operation for duplicate content
           console.warn('Failed to save content item:', error)
@@ -85,6 +99,7 @@ export const useContentCuration = () => {
       setState(prev => ({ 
         ...prev, 
         loading: false, 
+        progressStatus: null,
         lastUpdated: new Date(),
         error: null
       }))
@@ -92,11 +107,12 @@ export const useContentCuration = () => {
       // Update remaining calls
       await updateRemainingCalls()
 
-      return contentItems.length
+      return savedCount
     } catch (error: any) {
       setState(prev => ({ 
         ...prev, 
         loading: false, 
+        progressStatus: null,
         error: error.message || 'Failed to curate content' 
       }))
       throw error
