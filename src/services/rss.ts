@@ -99,16 +99,14 @@ export class RSSService {
 
 // Rate limiting for RSS feeds (much more lenient than Twitter)
 export class RSSRateLimitService {
-  private static readonly DAILY_LIMIT = 100 // RSS has no API limits
-  
-  static async canMakeRSSCall(userId: string): Promise<{ canCall: boolean; reason?: string }> {
+  static async canMakeRSSCall(): Promise<{ canCall: boolean; reason?: string }> {
     // RSS feeds have no rate limits, but we track usage for analytics
     return { canCall: true }
   }
   
-  static async recordRSSCall(userId: string): Promise<void> {
+  static async recordRSSCall(): Promise<void> {
     // Could implement analytics tracking here if needed
-    console.log(`RSS call recorded for user: ${userId}`)
+    console.log('RSS call recorded')
   }
 }
 
@@ -137,7 +135,7 @@ export class RSSCurationService {
         onProgress?.(`Fetching from ${source.display_name || source.handle} (${i + 1}/${sources.length})...`)
         
         const feed = await this.rssService.fetchRSSFeed(source.feed_url!)
-        await RSSRateLimitService.recordRSSCall(userId)
+        await RSSRateLimitService.recordRSSCall()
         
         // Transform RSS items to content items (limit to 10 per feed)
         for (const rssItem of feed.items.slice(0, 10)) {

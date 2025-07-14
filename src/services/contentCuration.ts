@@ -1,7 +1,7 @@
 import { TwitterCurationService, TwitterRateLimitService } from './twitter'
-import { RSSCurationService, RSSRateLimitService } from './rss'
+import { RSSCurationService } from './rss'
 import { getUserSources, createContentItem } from './database'
-import type { ContentSource, RSSSource, TwitterSource, ContentItem } from '../types'
+import type { RSSSource, TwitterSource, ContentItem } from '../types'
 
 interface CurationProgress {
   onProgress?: (status: string) => void
