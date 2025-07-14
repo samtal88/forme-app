@@ -44,14 +44,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log('Auth state change:', event, session)
       setSession(session)
       setUser(session?.user ? transformUser(session.user) : null)
       setLoading(false)
-
-      // Create user profile if this is a new signup
-      if (event === 'SIGNED_IN' && session?.user) {
-        await createUserProfile(session.user)
-      }
     })
 
     return () => subscription.unsubscribe()
@@ -103,9 +99,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const signInWithGoogle = async () => {
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
-      options: {
-        redirectTo: `${window.location.origin}/feed`,
-      },
     })
     return { data, error }
   }
