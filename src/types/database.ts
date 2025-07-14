@@ -32,9 +32,10 @@ export interface UserPreferences {
 export interface ContentSource {
   id: string
   user_id: string
-  platform: 'twitter' | 'instagram' | 'youtube'
+  platform: 'twitter' | 'rss'
   handle: string
   display_name?: string
+  feed_url?: string  // For RSS feeds
   priority: number
   is_active: boolean
   last_updated: string
@@ -54,6 +55,8 @@ export interface ContentItem {
   content_type: 'breaking' | 'transfer' | 'team' | 'general'
   media_urls?: string[]
   external_url?: string
+  source_url?: string      // Original RSS article URL
+  content_summary?: string // RSS description/summary
 }
 
 export interface UserInteraction {
@@ -67,7 +70,7 @@ export interface UserInteraction {
 export interface ApiUsageTracking {
   id: string
   user_id: string
-  platform: 'twitter' | 'instagram' | 'youtube'
+  platform: 'twitter' | 'rss'
   calls_used: number
   date: string
   created_at: string
