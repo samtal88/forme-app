@@ -66,7 +66,13 @@ function Feed() {
       
       console.log('Reloading feed content...')
       await loadFeedContent()
-      console.log('Feed content reloaded')
+      console.log('Feed content reloaded. Items in feed:', feedItems.length)
+      
+      if (itemsCreated === 0) {
+        alert('No new content was fetched. This could be due to rate limits or all sources being unavailable.')
+      } else if (feedItems.length === 0) {
+        alert(`${itemsCreated} items were created but not showing in feed. Check console for database errors.`)
+      }
     } catch (error) {
       console.error('Error refreshing content:', error)
       alert(`Error: ${error instanceof Error ? error.message : 'Unknown error'}`)
@@ -133,6 +139,30 @@ function Feed() {
 
           {/* Mock Data Test Component */}
           <MockDataTest />
+
+          {/* Debug: Database Content Check */}
+          <div className="card p-4 bg-yellow-50 border-yellow-200">
+            <h3 className="font-semibold mb-2">Debug: Database Check</h3>
+            <p className="text-sm text-yellow-700 mb-3">
+              Check what content exists in your database
+            </p>
+            <button 
+              onClick={async () => {
+                if (!user) return
+                try {
+                  const content = await getUserContent(user.id, 50) // Get more items
+                  console.log('Database content:', content)
+                  alert(`Found ${content.length} items in database. Check console for details.`)
+                } catch (error) {
+                  console.error('Database check error:', error)
+                  alert(`Database error: ${error}`)
+                }
+              }}
+              className="btn-secondary text-sm"
+            >
+              Check Database Content
+            </button>
+          </div>
 
           {/* Debug: Show Sources */}
           <div className="card p-4 bg-gray-50">
