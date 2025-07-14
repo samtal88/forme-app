@@ -6,7 +6,7 @@ import type { RSSSource } from '../types'
 
 export function RSSTest() {
   const { user } = useAuth()
-  const [testFeedUrl, setTestFeedUrl] = useState('https://feeds.feedburner.com/oreilly/radar')
+  const [testFeedUrl, setTestFeedUrl] = useState('https://www.theverge.com/rss/index.xml')
   const [loading, setLoading] = useState(false)
   const [result, setResult] = useState<string>('')
 
@@ -34,7 +34,42 @@ ${feed.items.slice(0, 3).map((item, i) =>
 
     } catch (error: any) {
       console.error('RSS test error:', error)
-      setResult(`❌ RSS Feed Test Failed: ${error.message}`)
+      setResult(`❌ RSS Feed Test Failed: ${error.message}
+
+Debug Info:
+- URL: ${testFeedUrl}
+- Error Type: ${error.name || 'Unknown'}
+- This might be due to CORS restrictions or the RSS feed being unavailable
+- Try a different RSS feed URL from the samples below`)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const testDirectFetch = async () => {
+    if (!testFeedUrl.trim()) {
+      setResult('Please enter a RSS feed URL')
+      return
+    }
+
+    setLoading(true)
+    setResult('Testing direct fetch (may fail due to CORS)...')
+
+    try {
+      const response = await fetch(testFeedUrl, {
+        mode: 'no-cors',
+        headers: {
+          'Accept': 'application/rss+xml, application/xml, text/xml'
+        }
+      })
+      
+      setResult(`✅ Direct fetch successful! Status: ${response.status}
+Note: Due to CORS, we can't read the content, but the URL is reachable.
+Try the "Test RSS Feed" button to test via our API proxy.`)
+
+    } catch (error: any) {
+      setResult(`❌ Direct fetch failed: ${error.message}
+This URL may be completely unreachable or have strict CORS policies.`)
     } finally {
       setLoading(false)
     }
@@ -105,18 +140,26 @@ ${feed.items.slice(0, 3).map((item, i) =>
             type="url"
             value={testFeedUrl}
             onChange={(e) => setTestFeedUrl(e.target.value)}
-            placeholder="https://feeds.feedburner.com/oreilly/radar"
+            placeholder="https://www.theverge.com/rss/index.xml"
             className="w-full px-3 py-2 border border-orange-300 rounded-md text-sm"
           />
         </div>
         
-        <div className="flex space-x-2">
+        <div className="flex flex-wrap gap-2">
           <button
             onClick={testRSSFeed}
             disabled={loading}
             className="btn-secondary text-sm disabled:opacity-50"
           >
             {loading ? 'Testing...' : 'Test RSS Feed'}
+          </button>
+          
+          <button
+            onClick={testDirectFetch}
+            disabled={loading}
+            className="btn-secondary text-sm disabled:opacity-50 bg-gray-100"
+          >
+            {loading ? 'Testing...' : 'Test Direct Fetch'}
           </button>
           
           <button
@@ -141,28 +184,28 @@ ${feed.items.slice(0, 3).map((item, i) =>
         <p className="text-sm text-orange-800 font-medium mb-2">Sample RSS Feeds to Test:</p>
         <div className="space-y-1 text-xs text-orange-700">
           <button 
-            onClick={() => setTestFeedUrl('https://feeds.feedburner.com/oreilly/radar')}
+            onClick={() => setTestFeedUrl('https://www.theverge.com/rss/index.xml')}
             className="block hover:underline text-left"
           >
-            O'Reilly Radar: https://feeds.feedburner.com/oreilly/radar
+            The Verge: https://www.theverge.com/rss/index.xml
           </button>
           <button 
-            onClick={() => setTestFeedUrl('https://rss.cnn.com/rss/cnn_topstories.rss')}
+            onClick={() => setTestFeedUrl('https://feeds.feedburner.com/TechCrunch')}
             className="block hover:underline text-left"
           >
-            CNN Top Stories: https://rss.cnn.com/rss/cnn_topstories.rss
+            TechCrunch: https://feeds.feedburner.com/TechCrunch
           </button>
           <button 
-            onClick={() => setTestFeedUrl('https://feeds.npr.org/1001/rss.xml')}
+            onClick={() => setTestFeedUrl('https://rss.cnn.com/rss/edition.rss')}
             className="block hover:underline text-left"
           >
-            NPR News: https://feeds.npr.org/1001/rss.xml
+            CNN: https://rss.cnn.com/rss/edition.rss
           </button>
           <button 
-            onClick={() => setTestFeedUrl('https://www.theguardian.com/football/rss')}
+            onClick={() => setTestFeedUrl('https://techcrunch.com/feed')}
             className="block hover:underline text-left"
           >
-            Guardian Football: https://www.theguardian.com/football/rss
+            TechCrunch Direct: https://techcrunch.com/feed
           </button>
         </div>
       </div>
