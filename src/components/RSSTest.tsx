@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { rssService, rssCuration } from '../services/rss'
 import { useAuth } from '../contexts/AuthContext'
-import { getUserSources, saveContentItems } from '../services/database'
+import { getUserSources, createContentItem } from '../services/database'
 import type { RSSSource } from '../types'
 
 export function RSSTest() {
@@ -69,8 +69,16 @@ ${feed.items.slice(0, 3).map((item, i) =>
 
       if (contentItems.length > 0) {
         // Save to database
-        await saveContentItems(contentItems)
-        setResult(prev => prev + `\n✅ Successfully saved ${contentItems.length} RSS items to database!`)
+        let savedCount = 0
+        for (const item of contentItems) {
+          try {
+            await createContentItem(item)
+            savedCount++
+          } catch (error) {
+            console.error('Error saving content item:', error)
+          }
+        }
+        setResult(prev => prev + `\n✅ Successfully saved ${savedCount}/${contentItems.length} RSS items to database!`)
       } else {
         setResult(prev => prev + '\n⚠️ No RSS content items were generated.')
       }
