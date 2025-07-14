@@ -60,20 +60,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
     avatar_url: user.user_metadata?.avatar_url,
   })
 
-  const createUserProfile = async (user: User) => {
-    const { error } = await supabase
-      .from('users')
-      .insert({
-        id: user.id,
-        email: user.email!,
-        name: user.user_metadata?.name || user.user_metadata?.full_name,
-        avatar_url: user.user_metadata?.avatar_url,
-      })
-
-    if (error && error.code !== '23505') { // Ignore duplicate key error
-      console.error('Error creating user profile:', error)
-    }
-  }
 
   const signIn = async (email: string, password: string) => {
     const { data, error } = await supabase.auth.signInWithPassword({
