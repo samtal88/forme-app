@@ -119,7 +119,6 @@ export class RSSCurationService {
   }
   
   async curateRSSContent(
-    userId: string,
     sources: RSSSource[],
     onProgress?: (status: string) => void
   ): Promise<Array<Omit<ContentItem, 'id' | 'cached_at'>>> {

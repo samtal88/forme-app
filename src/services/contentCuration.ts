@@ -46,7 +46,6 @@ export class UnifiedContentCurationService {
         onProgress?.('Starting RSS content curation...')
         
         const rssItems = await this.rssCuration.curateRSSContent(
-          userId,
           rssSources,
           onProgress
         )
