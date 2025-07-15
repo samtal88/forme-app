@@ -81,15 +81,22 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       itemCount: feed.items.length
     })
     
+    // Additional debug info for troubleshooting
+    const debugInfo = {
+      xmlLength: xmlText.length,
+      xmlPreview: xmlText.substring(0, 500),
+      feedType: xmlText.includes('<feed') ? 'Atom' : 'RSS',
+      entryCount: xmlText.match(/<entry/gi)?.length || 0,
+      entryWithSpaceCount: xmlText.match(/<entry\s/gi)?.length || 0,
+      hasEntryTags: xmlText.includes('<entry'),
+      xmlMiddlePreview: xmlText.substring(1000, 1500) // Show middle part too
+    }
+    
     return res.status(200).json({
       success: true,
       feed,
       itemCount: feed.items.length,
-      debug: {
-        xmlLength: xmlText.length,
-        xmlPreview: xmlText.substring(0, 500),
-        feedType: xmlText.includes('<feed') ? 'Atom' : 'RSS'
-      }
+      debug: debugInfo
     })
 
   } catch (error: any) {
@@ -166,6 +173,24 @@ function parseRSSXML(xmlText: string): RSSFeed {
     }
     
     console.log('Found item matches:', itemMatches?.length || 0)
+    
+    // Debug: Let's see what entry patterns exist in the XML
+    if (isAtom && (!itemMatches || itemMatches.length === 0)) {
+      console.log('No entry matches found. Let\'s check what entry-like patterns exist:')
+      const entryPatternsCheck = [
+        xmlText.match(/<entry/gi)?.length || 0,
+        xmlText.match(/<entry\s/gi)?.length || 0,
+        xmlText.match(/<entry>/gi)?.length || 0,
+        xmlText.includes('<entry') ? 'Has <entry' : 'No <entry found'
+      ]
+      console.log('Entry pattern check:', entryPatternsCheck)
+      
+      // Try to find any entry tag and show its context
+      const entryIndex = xmlText.indexOf('<entry')
+      if (entryIndex !== -1) {
+        console.log('First entry context:', xmlText.substring(entryIndex, entryIndex + 500))
+      }
+    }
     
     if (itemMatches) {
       console.log('First item preview:', itemMatches[0]?.substring(0, 300))

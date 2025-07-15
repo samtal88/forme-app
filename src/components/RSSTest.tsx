@@ -42,7 +42,11 @@ ${feed.items.slice(0, 3).map((item: RSSItem, i: number) =>
 🔍 Debug Info:
 - XML Length: ${data.debug?.xmlLength || 'N/A'}
 - Feed Type: ${data.debug?.feedType || 'N/A'}
-- XML Preview: ${data.debug?.xmlPreview || 'N/A'}`)
+- Entry Tags Found: ${data.debug?.entryCount || 0}
+- Entry Tags with Space: ${data.debug?.entryWithSpaceCount || 0}
+- Has Entry Tags: ${data.debug?.hasEntryTags || false}
+- XML Preview: ${data.debug?.xmlPreview || 'N/A'}
+- XML Middle Preview: ${data.debug?.xmlMiddlePreview || 'N/A'}`)
 
     } catch (error: any) {
       console.error('RSS test error:', error)
