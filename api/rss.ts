@@ -158,9 +158,11 @@ function parseRSSXML(xmlText: string): RSSFeed {
     let itemMatches: RegExpMatchArray | null = null
     
     if (isAtom) {
-      itemMatches = xmlText.match(/<entry[^>]*>.*?<\/entry>/gis)
+      // For Atom feeds, look for entry elements
+      itemMatches = xmlText.match(/<entry(?:\s[^>]*)?>[\s\S]*?<\/entry>/gi)
     } else {
-      itemMatches = xmlText.match(/<item[^>]*>.*?<\/item>/gis)
+      // For RSS feeds, look for item elements  
+      itemMatches = xmlText.match(/<item(?:\s[^>]*)?>[\s\S]*?<\/item>/gi)
     }
     
     console.log('Found item matches:', itemMatches?.length || 0)
@@ -241,15 +243,22 @@ function parseRSSItem(itemXml: string): RSSItem | null {
 function parseAtomEntry(entryXml: string): RSSItem | null {
   try {
     console.log('Parsing Atom entry, XML length:', entryXml.length)
+    console.log('Entry XML preview:', entryXml.substring(0, 200))
     
-    const titleMatch = entryXml.match(/<title[^>]*>(.*?)<\/title>/is)
-    const summaryMatch = entryXml.match(/<summary[^>]*>(.*?)<\/summary>/is)
-    const contentMatch = entryXml.match(/<content[^>]*>(.*?)<\/content>/is)
-    const linkMatch = entryXml.match(/<link[^>]*href="([^"]*)"[^>]*>/i)
+    // More flexible title matching for Atom feeds
+    const titleMatch = entryXml.match(/<title[^>]*?(?:type="[^"]*")?[^>]*>(.*?)<\/title>/is)
+    const summaryMatch = entryXml.match(/<summary[^>]*?(?:type="[^"]*")?[^>]*>(.*?)<\/summary>/is)
+    const contentMatch = entryXml.match(/<content[^>]*?(?:type="[^"]*")?[^>]*>(.*?)<\/content>/is)
+    
+    // Multiple link patterns for Atom feeds
+    const linkMatch = entryXml.match(/<link[^>]*?href="([^"]*)"[^>]*?(?:rel="alternate")?[^>]*>/i) ||
+                     entryXml.match(/<link[^>]*?rel="alternate"[^>]*?href="([^"]*)"[^>]*>/i) ||
+                     entryXml.match(/<link[^>]*href="([^"]*)"[^>]*>/i)
+    
     const publishedMatch = entryXml.match(/<published[^>]*>(.*?)<\/published>/is)
     const updatedMatch = entryXml.match(/<updated[^>]*>(.*?)<\/updated>/is)
     const idMatch = entryXml.match(/<id[^>]*>(.*?)<\/id>/is)
-    const authorMatch = entryXml.match(/<author[^>]*>.*?<name[^>]*>(.*?)<\/name>.*?<\/author>/is)
+    const authorMatch = entryXml.match(/<author[^>]*>[\s\S]*?<name[^>]*>(.*?)<\/name>[\s\S]*?<\/author>/is)
     
     const title = cleanText(titleMatch?.[1] || '')
     const description = cleanText(summaryMatch?.[1] || contentMatch?.[1] || '')
@@ -260,9 +269,11 @@ function parseAtomEntry(entryXml: string): RSSItem | null {
     
     console.log('Atom entry extract results:', {
       titleMatch: !!titleMatch,
+      titleText: titleMatch?.[1]?.substring(0, 50),
       summaryMatch: !!summaryMatch,
       contentMatch: !!contentMatch,
       linkMatch: !!linkMatch,
+      linkUrl: linkMatch?.[1]?.substring(0, 50),
       title: title.substring(0, 50),
       description: description.substring(0, 50)
     })
