@@ -251,8 +251,11 @@ export class TwitterCurationService {
       const { source, callsToUse } = sourcesToFetch[i]
       
       try {
-        onProgress?.(`Fetching ${callsToUse} tweets from @${source.handle} (${i + 1}/${sourcesToFetch.length})...`)
-        console.log(`Fetching ${callsToUse} tweets from @${source.handle}`)
+        // Limit to 1 tweet per source to avoid rate limits
+        const tweetsToFetch = Math.min(callsToUse, 1)
+        
+        onProgress?.(`Fetching ${tweetsToFetch} tweets from @${source.handle} (${i + 1}/${sourcesToFetch.length})...`)
+        console.log(`Fetching ${tweetsToFetch} tweets from @${source.handle}`)
         
         // Retry logic for rate limit errors
         let tweets = null
@@ -260,7 +263,7 @@ export class TwitterCurationService {
         
         while (retryCount <= MAX_RETRIES) {
           try {
-            tweets = await this.twitterAPI.getUserTweets(source.handle, callsToUse)
+            tweets = await this.twitterAPI.getUserTweets(source.handle, tweetsToFetch)
             break // Success, exit retry loop
           } catch (error: any) {
             if (error.message.includes('429') && retryCount < MAX_RETRIES) {
