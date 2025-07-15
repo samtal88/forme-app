@@ -171,7 +171,7 @@ class TwitterAPIService {
 
 // Rate limiting service
 export class TwitterRateLimitService {
-  private static readonly DAILY_LIMIT = 10 // Temporarily increased for testing
+  private static readonly DAILY_LIMIT = 3 // Reduced to avoid rate limits
 
   static async canMakeAPICall(userId: string): Promise<{ canCall: boolean; reason?: string }> {
     try {
@@ -242,7 +242,7 @@ export class TwitterCurationService {
     const sourcesToFetch = this.distributeCalls(prioritySources, remainingCalls)
     
     const contentItems: Array<Omit<ContentItem, 'id' | 'cached_at'>> = []
-    const DELAY_BETWEEN_CALLS = 3000 // 3 seconds between API calls
+    const DELAY_BETWEEN_CALLS = 60000 // 60 seconds between API calls to avoid rate limits
     const MAX_RETRIES = 2
 
     onProgress?.(`Starting to fetch from ${sourcesToFetch.length} sources...`)
@@ -265,8 +265,8 @@ export class TwitterCurationService {
           } catch (error: any) {
             if (error.message.includes('429') && retryCount < MAX_RETRIES) {
               retryCount++
-              const retryDelay = DELAY_BETWEEN_CALLS * retryCount * 2 // Exponential backoff
-              onProgress?.(`Rate limited on @${source.handle}, retrying in ${retryDelay/1000}s (attempt ${retryCount}/${MAX_RETRIES})...`)
+              const retryDelay = 15 * 60 * 1000 // Wait 15 minutes for rate limit reset
+              onProgress?.(`Rate limited on @${source.handle}, waiting ${retryDelay/1000/60} minutes (attempt ${retryCount}/${MAX_RETRIES})...`)
               console.log(`Rate limited, waiting ${retryDelay}ms before retry ${retryCount}`)
               await this.delay(retryDelay)
             } else {
